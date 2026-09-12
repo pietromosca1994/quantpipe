@@ -1,0 +1,23 @@
+# Tickers ingestion fetches 1-minute bars for, plus the timeframes each one is
+# intended to be trained/predicted on once services/training and services/inference
+# exist. Loaded and validated via quantpipe_common.config.AppConfig.
+tickers:
+  - symbol: AAPL
+    asset_class: us_equity
+    timeframes: ["1m", "15m", "1h", "1d"]
+
+  - symbol: MSFT
+    asset_class: us_equity
+    timeframes: ["1m", "15m", "1h", "1d"]
+
+  - symbol: SPY
+    asset_class: us_equity
+    timeframes: ["15m", "1h", "1d"]
+
+  - symbol: BTC/USD
+    asset_class: crypto
+    timeframes: ["1m", "15m", "1h", "1d"]
+
+  - symbol: ETH/USD
+    asset_class: crypto
+    timeframes: ["15m", "1h", "1d"]

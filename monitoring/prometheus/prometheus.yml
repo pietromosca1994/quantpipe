@@ -1,0 +1,28 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: node_exporter
+    static_configs:
+      - targets: ["node-exporter:9100"]
+
+  - job_name: postgres_exporter
+    static_configs:
+      - targets: ["postgres-exporter:9187"]
+
+  - job_name: cadvisor
+    static_configs:
+      - targets: ["cadvisor:8080"]
+
+  - job_name: ingestion
+    static_configs:
+      - targets: ["ingestion-flows:8000"]
+
+  # Prefect OSS does not expose a documented stable Prometheus /metrics endpoint
+  # as of the Prefect version pinned in services/*/requirements.txt. Verify
+  # against the running prefect-server before enabling this job — see
+  # observability.md's note that Prefect "exposes its own metrics".
+  # - job_name: prefect
+  #   static_configs:
+  #     - targets: ["prefect-server:4200"]

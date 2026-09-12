@@ -216,3 +216,24 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Environment files (real secrets)
+.env
+.env.*
+!.env.example
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.auto.tfvars
+*.auto.tfvars.json
+terraform.tfvars
+crash.log
+crash.*.log
+# .terraform.lock.hcl IS committed intentionally - do not ignore it
+
+# MLflow local dev artifacts
+mlruns/
+mlflow-artifacts/
+

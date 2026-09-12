@@ -1,0 +1,19 @@
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+testpaths = [
+    "common/tests",
+    "services/ingestion/tests",
+]
+pythonpath = [
+    "common",
+    "services/ingestion/src",
+]
+# common/tests and services/ingestion/tests both package as "tests" — importlib
+# mode resolves each by file path instead of colliding on that shared name.
+addopts = "--import-mode=importlib"

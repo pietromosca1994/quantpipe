@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+set -euxo pipefail
+
+DATA_DEVICE="${data_volume_path}"
+DOCKER_DATA_ROOT="/var/lib/docker"
+
+# oci-utils (preinstalled on Oracle's platform images) handles the iSCSI
+# attach/login itself once the volume attachment exists; just wait for the
+# block device to show up.
+for i in $(seq 1 30); do
+  [ -b "$DATA_DEVICE" ] && break
+  sleep 5
+done
+
+if ! blkid "$DATA_DEVICE" &> /dev/null; then
+  mkfs.ext4 "$DATA_DEVICE"
+fi
+
+# Relocate Docker's data root onto the Block Volume *before* Docker ever
+# starts, so every named volume persists across instance recreation.
+mkdir -p "$DOCKER_DATA_ROOT"
+grep -q "$DATA_DEVICE" /etc/fstab || echo "$DATA_DEVICE $DOCKER_DATA_ROOT ext4 defaults,nofail 0 2" >> /etc/fstab
+mount "$DOCKER_DATA_ROOT"
+
+if ! command -v docker &> /dev/null; then
+  curl -fsSL https://get.docker.com | sh
+fi
+systemctl enable --now docker
+
+REPO_DIR="/opt/quantpipe"
+if [ -d "$REPO_DIR/.git" ]; then
+  git -C "$REPO_DIR" pull
+else
+  git clone "${repo_url}" "$REPO_DIR"
+fi
+
+cd "$REPO_DIR"
+# .env is not managed by Terraform and must be created on the VM by hand
+# (see .env.example) before the first `docker compose up` — see CLAUDE.md's
+# secrets section for why this stays a manual step in v1.
+docker compose up -d

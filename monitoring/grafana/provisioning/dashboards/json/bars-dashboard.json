@@ -1,0 +1,65 @@
+{
+  "title": "QuantPipe Bars",
+  "uid": "quantpipe-bars",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "timezone": "utc",
+  "time": { "from": "now-24h", "to": "now" },
+  "refresh": "1m",
+  "templating": {
+    "list": [
+      {
+        "name": "timeframe",
+        "type": "custom",
+        "query": "1m,15m,1h,1d",
+        "current": { "text": "15m", "value": "15m" },
+        "options": [
+          { "text": "1m", "value": "1m" },
+          { "text": "15m", "value": "15m", "selected": true },
+          { "text": "1h", "value": "1h" },
+          { "text": "1d", "value": "1d" }
+        ]
+      },
+      {
+        "name": "ticker",
+        "type": "query",
+        "datasource": { "type": "postgres", "uid": "TimescaleDB" },
+        "query": "SELECT DISTINCT ticker FROM bars_1m ORDER BY ticker",
+        "refresh": 2
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "$ticker close price ($timeframe)",
+      "type": "timeseries",
+      "datasource": { "type": "postgres", "uid": "TimescaleDB" },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "TimescaleDB" },
+          "format": "time_series",
+          "rawSql": "SELECT time AS \"time\", close FROM bars_$timeframe WHERE ticker = '$ticker' AND $__timeFilter(time) ORDER BY time",
+          "rawQuery": true
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "$ticker volume ($timeframe)",
+      "type": "timeseries",
+      "datasource": { "type": "postgres", "uid": "TimescaleDB" },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 10 },
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "TimescaleDB" },
+          "format": "time_series",
+          "rawSql": "SELECT time AS \"time\", volume FROM bars_$timeframe WHERE ticker = '$ticker' AND $__timeFilter(time) ORDER BY time",
+          "rawQuery": true
+        }
+      ]
+    }
+  ]
+}

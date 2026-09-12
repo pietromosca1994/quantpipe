@@ -1,0 +1,23 @@
+# Local development convenience only: exposes internal service UIs/ports on
+# the host so you can poke at them directly. Never applies to the VM deployment
+# — infra/terraform's security list only opens SSH and Grafana's port.
+services:
+  timescaledb:
+    ports:
+      - "5432:5432"
+
+  prefect-server:
+    ports:
+      - "4200:4200"
+
+  mlflow:
+    ports:
+      - "5000:5000"
+
+  prometheus:
+    ports:
+      - "9090:9090"
+
+  ingestion-flows:
+    ports:
+      - "8000:8000"

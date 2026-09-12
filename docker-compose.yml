@@ -1,0 +1,185 @@
+x-app-env: &app-env
+  ALPACA_API_KEY: ${ALPACA_API_KEY}
+  ALPACA_SECRET_KEY: ${ALPACA_SECRET_KEY}
+  ALPACA_DATA_BASE_URL: ${ALPACA_DATA_BASE_URL}
+  POSTGRES_USER: ${POSTGRES_USER}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+  POSTGRES_DB: ${POSTGRES_DB}
+  POSTGRES_HOST: timescaledb
+  POSTGRES_PORT: 5432
+  PREFECT_API_URL: http://prefect-server:4200/api
+
+services:
+  timescaledb:
+    image: timescale/timescaledb:latest-pg16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - timescale_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  # Prefect's own run/schedule metadata uses its default SQLite backend on a
+  # named volume — simpler than provisioning a second Postgres database for
+  # a single-VM, solo-project deployment. Revisit if/when this needs HA.
+  prefect-server:
+    image: prefecthq/prefect:3-python3.12
+    command: ["prefect", "server", "start", "--host", "0.0.0.0"]
+    environment:
+      PREFECT_SERVER_API_HOST: "0.0.0.0"
+    volumes:
+      - prefect_data:/root/.prefect
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:4200/api/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  # No separate "prefect-worker" container: services/prefect_flows/deployments.py
+  # uses Prefect's `serve()` API, which self-schedules and executes flow runs
+  # in this same process — simpler than a work-pool + worker for a single-VM
+  # deployment with no need for per-run container isolation yet. Revisit if
+  # training later needs isolated/GPU work-pool execution.
+  ingestion-flows:
+    build:
+      context: .
+      dockerfile: services/prefect_flows/Dockerfile
+    environment:
+      <<: *app-env
+    volumes:
+      - ./config:/app/config:ro
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+      prefect-server:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Local dev default: SQLite backend store + filesystem artifact store (no
+  # Object Storage/S3 credentials needed). Production points these at the
+  # shared Postgres and an Oracle Object Storage bucket instead — see README.
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:latest
+    command:
+      - mlflow
+      - server
+      - --host=0.0.0.0
+      - --port=5000
+      - --backend-store-uri=sqlite:////mlflow/mlflow.db
+      - --default-artifact-root=/mlflow/artifacts
+    volumes:
+      - mlflow_data:/mlflow
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana_data:/var/lib/grafana
+    # Grafana is the one internal service intentionally reachable from outside
+    # the VM (see infrastructure.md) — everything else stays Docker-internal.
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+      - timescaledb
+    restart: unless-stopped
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    pid: host
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - "--path.procfs=/host/proc"
+      - "--path.sysfs=/host/sys"
+      - "--path.rootfs=/rootfs"
+      - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
+    restart: unless-stopped
+
+  postgres-exporter:
+    image: quay.io/prometheuscommunity/postgres-exporter:latest
+    environment:
+      DATA_SOURCE_NAME: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@timescaledb:5432/${POSTGRES_DB}?sslmode=disable"
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+    restart: unless-stopped
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    restart: unless-stopped
+
+  # --- Not built yet — services/training doesn't exist. Uncomment once it does. ---
+  # training:
+  #   build:
+  #     context: .
+  #     dockerfile: services/training/Dockerfile
+  #   environment:
+  #     <<: *app-env
+  #     MLFLOW_TRACKING_URI: ${MLFLOW_TRACKING_URI}
+  #     MLFLOW_S3_ENDPOINT_URL: ${MLFLOW_S3_ENDPOINT_URL}
+  #     AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+  #     AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+  #   volumes:
+  #     - ./config:/app/config:ro
+  #   depends_on:
+  #     timescaledb:
+  #       condition: service_healthy
+  #     mlflow:
+  #       condition: service_started
+  #   restart: unless-stopped
+
+  # --- Not built yet — services/inference doesn't exist. Uncomment once it does. ---
+  # inference:
+  #   build:
+  #     context: .
+  #     dockerfile: services/inference/Dockerfile
+  #   environment:
+  #     <<: *app-env
+  #     MLFLOW_TRACKING_URI: ${MLFLOW_TRACKING_URI}
+  #     MLFLOW_S3_ENDPOINT_URL: ${MLFLOW_S3_ENDPOINT_URL}
+  #     AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+  #     AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+  #   volumes:
+  #     - ./config:/app/config:ro
+  #   depends_on:
+  #     timescaledb:
+  #       condition: service_healthy
+  #     mlflow:
+  #       condition: service_started
+  #   restart: unless-stopped
+
+volumes:
+  timescale_data:
+  prefect_data:
+  mlflow_data:
+  prometheus_data:
+  grafana_data:
