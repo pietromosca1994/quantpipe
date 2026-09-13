@@ -21,3 +21,7 @@ datasources:
       sslmode: disable
       postgresVersion: 1600
       timescaledb: true
+      # The postgres plugin's query editor reads its "default database" check
+      # from jsonData.database specifically, not the top-level database field
+      # above (which is what the backend connection actually uses).
+      database: "${POSTGRES_DB}"
