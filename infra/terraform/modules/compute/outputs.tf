@@ -4,7 +4,7 @@ output "instance_id" {
 }
 
 output "instance_public_ip" {
-  description = "SSH here, and reach Grafana at http://<this>:3000 (from admin_ip only)."
+  description = "SSH here, and reach Grafana at http://<this>:3000 (from one of admin_ips only)."
   value       = oci_core_instance.quantpipe.public_ip
 }
 

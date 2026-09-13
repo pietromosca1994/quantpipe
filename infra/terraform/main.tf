@@ -2,7 +2,7 @@ module "network" {
   source = "./modules/network"
 
   compartment_ocid = var.compartment_ocid
-  admin_ip         = var.admin_ip
+  admin_ips        = var.admin_ips
 }
 
 module "compute" {

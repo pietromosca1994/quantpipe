@@ -28,9 +28,9 @@ variable "compartment_ocid" {
   type        = string
 }
 
-variable "admin_ip" {
-  description = "Your public IP in CIDR form (e.g. 203.0.113.4/32), allowed to reach SSH and Grafana. Never left open to 0.0.0.0/0."
-  type        = string
+variable "admin_ips" {
+  description = "Your public IP(s) in CIDR form (e.g. [\"203.0.113.4/32\"]), allowed to reach SSH and Grafana. Add an entry per network you connect from (home, travel, etc.) — never include 0.0.0.0/0."
+  type        = list(string)
 }
 
 variable "ssh_public_key_path" {

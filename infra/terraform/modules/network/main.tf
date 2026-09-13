@@ -37,23 +37,29 @@ resource "oci_core_security_list" "quantpipe" {
     protocol    = "all"
   }
 
-  ingress_security_rules {
-    description = "SSH, admin IP only"
-    source      = var.admin_ip
-    protocol    = "6" # TCP
-    tcp_options {
-      min = 22
-      max = 22
+  dynamic "ingress_security_rules" {
+    for_each = var.admin_ips
+    content {
+      description = "SSH, allowed admin IPs only"
+      source      = ingress_security_rules.value
+      protocol    = "6" # TCP
+      tcp_options {
+        min = 22
+        max = 22
+      }
     }
   }
 
-  ingress_security_rules {
-    description = "Grafana, admin IP only — put an authenticated reverse proxy in front before widening this"
-    source      = var.admin_ip
-    protocol    = "6"
-    tcp_options {
-      min = 3000
-      max = 3000
+  dynamic "ingress_security_rules" {
+    for_each = var.admin_ips
+    content {
+      description = "Grafana, allowed admin IPs only — put an authenticated reverse proxy in front before widening this"
+      source      = ingress_security_rules.value
+      protocol    = "6"
+      tcp_options {
+        min = 3000
+        max = 3000
+      }
     }
   }
 }

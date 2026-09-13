@@ -3,7 +3,7 @@ variable "compartment_ocid" {
   type        = string
 }
 
-variable "admin_ip" {
-  description = "Admin's public IP in CIDR form (e.g. 203.0.113.4/32), the only source allowed to reach SSH and Grafana."
-  type        = string
+variable "admin_ips" {
+  description = "Admin public IPs in CIDR form (e.g. [\"203.0.113.4/32\"]), the only sources allowed to reach SSH and Grafana."
+  type        = list(string)
 }
