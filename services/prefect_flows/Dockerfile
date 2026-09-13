@@ -18,6 +18,6 @@ COPY config /app/config
 
 ENV PYTHONPATH=/app/services/ingestion/src:/app/services/prefect_flows
 
-WORKDIR /app/services/prefect_flows
-
-CMD ["python", "deployments.py"]
+# Stay at /app (not services/prefect_flows) so ingest_bars' default relative
+# config_path ("config/tickers.yaml") resolves to the config/ copied above.
+CMD ["python", "services/prefect_flows/deployments.py"]

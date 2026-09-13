@@ -12,6 +12,6 @@ COPY config /app/config
 
 ENV PYTHONPATH=/app/services/ingestion/src
 
-WORKDIR /app/services/ingestion
-
+# Stay at /app so ingest_bars' default relative config_path
+# ("config/tickers.yaml") resolves to the config/ copied above.
 CMD ["python", "-m", "ingestion.flow"]

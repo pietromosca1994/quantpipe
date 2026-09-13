@@ -6,6 +6,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from alpaca.common.exceptions import APIError
+from alpaca.data.enums import DataFeed
 from alpaca.data.historical import CryptoHistoricalDataClient, StockHistoricalDataClient
 from alpaca.data.requests import CryptoBarsRequest, StockBarsRequest
 from alpaca.data.timeframe import TimeFrame
@@ -54,6 +55,7 @@ class AlpacaBarsClient:
         secret_key = config.secret_key.get_secret_value()
         self._stock_client = StockHistoricalDataClient(api_key, secret_key)
         self._crypto_client = CryptoHistoricalDataClient(api_key, secret_key)
+        self._feed = DataFeed(config.feed)
 
     def fetch_latest_bars(self, tickers: Sequence[TickerConfig], lookback: timedelta) -> list[Bar]:
         end = datetime.now(UTC)
@@ -96,9 +98,12 @@ class AlpacaBarsClient:
         end: datetime,
         asset_class: AssetClass,
     ) -> list[Bar]:
-        request = request_cls(
+        kwargs: dict[str, Any] = dict(
             symbol_or_symbols=symbols, timeframe=TimeFrame.Minute, start=start, end=end
         )
+        if request_cls is StockBarsRequest:
+            kwargs["feed"] = self._feed
+        request = request_cls(**kwargs)
         try:
             response = get_bars(request)
         except APIError as exc:

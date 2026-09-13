@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Literal
 
 import yaml
 from pydantic import BaseModel, Field, SecretStr
@@ -20,6 +21,10 @@ class AlpacaConfig(BaseSettings):
     api_key: SecretStr
     secret_key: SecretStr
     data_base_url: str = "https://data.alpaca.markets"
+    # "iex" is the only feed a free/basic Alpaca plan can query for recent
+    # (non-15-min-delayed) equity bars — "sip" needs a paid market data
+    # subscription. Override via ALPACA_FEED if the account has one.
+    feed: Literal["iex", "sip", "delayed_sip"] = "iex"
 
 
 class DBConfig(BaseSettings):
