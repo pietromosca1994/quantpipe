@@ -9,6 +9,8 @@ user              = "ocid1.user.oc1..aaaaaaaaxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 fingerprint       = "xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx"
 key_file          = "~/.oci/oci_api_key.pem"
 region            = "us-ashburn-1"
+
+# Console → hamburger menu (☰) → Identity & Security → Compartments.
 compartment_ocid  = "ocid1.compartment.oc1..aaaaaaaaxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 
 # One entry per network you connect from (home, travel, etc.).
