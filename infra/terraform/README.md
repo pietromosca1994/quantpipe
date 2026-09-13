@@ -32,5 +32,6 @@ one) and is composed here, not applied on its own.
 
 ## Usage
 
-See the top-level [README.md](../../README.md#deploying-to-oracle-cloud) for
-the full deploy walkthrough (`terraform.tfvars`, `init`/`plan`/`apply`).
+See [infra/README.md](../README.md) for the full runbook — first-time
+`terraform.tfvars` setup, `init`/`plan`/`apply`, updating allowed SSH/Grafana
+access, tearing down, and troubleshooting.

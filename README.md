@@ -161,12 +161,12 @@ costs ~30-60s for that setup; this is expected, not a hang.
 
 ## Deploying to Oracle Cloud
 
-1. `cd infra/terraform && cp terraform.tfvars.example terraform.tfvars`, fill
-   in your tenancy/compartment OCIDs, API key fingerprint, admin IP(s), and a
-   region-specific ARM image OCID (see `variables.tf` for how to look one up).
+See [infra/README.md](infra/README.md) for the full Terraform runbook
+(first-time setup, `init`/`plan`/`apply`, updating allowed SSH/Grafana
+access, tearing down, and troubleshooting). In short:
+
+1. `cd infra/terraform && cp terraform.tfvars.example terraform.tfvars` and fill it in.
 2. `terraform init && terraform validate && terraform plan` — review before applying.
-   (Not verified against a real OCI account as part of building this scaffold —
-   review the plan output carefully before `apply`.)
 3. `terraform apply` provisions the VCN, security list (SSH + Grafana only,
    restricted to `admin_ips`), the Ampere A1 instance, its Block Volume, and the
    Object Storage bucket. Cloud-init clones this repo and runs `docker compose up -d`.
@@ -175,29 +175,6 @@ costs ~30-60s for that setup; this is expected, not a hang.
    didn't already start cleanly.
 5. Future deploys: `git pull && docker compose up -d --build` on the VM. Re-running
    Compose never touches Terraform-managed cloud resources.
-
-## Updating allowed SSH/Grafana access
-
-`admin_ips` is a list of CIDRs, not a single IP — most home routers get a
-dynamic public IP from the ISP, so it can and does change (modem reboot,
-DHCP lease renewal, outage), and you may also want access from a second
-network (travel, a different location) without losing access from the first.
-
-To add or refresh an entry:
-
-1. Find the public IP you're connecting from: `curl -s ifconfig.me`.
-2. Add or update the corresponding entry in `terraform.tfvars`'s `admin_ips`
-   list (each as `"x.x.x.x/32"`), keeping any other network you still need
-   access from.
-3. `cd infra/terraform && terraform apply`. This only updates the security
-   list's ingress rules — it doesn't touch the running instance, so there's
-   no downtime for the app.
-
-You do **not** need to already be in an allowed IP to do this: `terraform
-apply` talks to OCI's API over the public internet, not to the VM itself,
-so it works from anywhere you have your OCI credentials and `terraform.tfvars`.
-Never add `0.0.0.0/0` as a shortcut — that removes the only network-level
-protection SSH and Grafana have.
 
 ## Deferred (see the original design notes for detail)
 
