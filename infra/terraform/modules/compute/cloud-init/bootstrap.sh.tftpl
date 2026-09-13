@@ -1,12 +1,26 @@
 #!/usr/bin/env bash
 set -euxo pipefail
 
-DATA_DEVICE="${data_volume_path}"
+ISCSI_PORTAL="169.254.2.2:3260"
 DOCKER_DATA_ROOT="/var/lib/docker"
 
-# oci-utils (preinstalled on Oracle's platform images) handles the iSCSI
-# attach/login itself once the volume attachment exists; just wait for the
-# block device to show up.
+# oci-utils would normally auto-discover and log in to the Block Volume's
+# iSCSI target, but it's not installed on Canonical's Ubuntu images (only
+# Oracle Linux ones ship it) — do it directly with iscsiadm instead, which
+# is present. Retried because Terraform may still be creating/attaching the
+# volume when this script starts.
+TARGET_IQN=""
+for i in $(seq 1 60); do
+  TARGET_IQN=$(iscsiadm -m discovery -t sendtargets -p "$ISCSI_PORTAL" 2>/dev/null | awk '{print $2}' | head -n1 || true)
+  [ -n "$TARGET_IQN" ] && break
+  sleep 5
+done
+[ -n "$TARGET_IQN" ]
+
+iscsiadm -m node -o update -T "$TARGET_IQN" -n node.startup -v automatic
+iscsiadm -m node -T "$TARGET_IQN" -p "$ISCSI_PORTAL" -l
+
+DATA_DEVICE="/dev/disk/by-path/ip-$ISCSI_PORTAL-iscsi-$TARGET_IQN-lun-1"
 for i in $(seq 1 30); do
   [ -b "$DATA_DEVICE" ] && break
   sleep 5

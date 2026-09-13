@@ -27,8 +27,7 @@ resource "oci_core_instance" "quantpipe" {
   metadata = {
     ssh_authorized_keys = file(pathexpand(var.ssh_public_key_path))
     user_data = base64encode(templatefile("${path.module}/cloud-init/bootstrap.sh.tftpl", {
-      repo_url         = var.repo_url
-      data_volume_path = "/dev/oracleoci/oraclevdb"
+      repo_url = var.repo_url
     }))
   }
 }

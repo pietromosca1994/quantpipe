@@ -49,14 +49,6 @@ terraform plan       # review before applying
 terraform apply
 ```
 
-On a first run, `plan` should show `9 to add, 0 to change, 0 to destroy`.
-`apply` provisions the VCN + subnet + security list (SSH/Grafana restricted
-to `admin_ips`), the Ampere A1 instance, its Block Volume, and the Object
-Storage bucket — cloud-init then clones the repo on the VM and runs
-`docker compose up -d`. See the top-level
-[README.md](../README.md#deploying-to-oracle-cloud) for what to do next
-(creating `.env` on the VM, etc.).
-
 ## Updating allowed SSH/Grafana access
 
 `admin_ips` is a list, not a single IP — most home routers get a dynamic
