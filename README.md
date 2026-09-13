@@ -105,6 +105,7 @@ quantpipe/
 │   └── prefect_flows/        # deployments.py: schedules, kept separate from flow logic
 ├── common/quantpipe_common/  # shared package: config/schemas, SQLAlchemy models, session factory, Alembic migrations
 ├── monitoring/                # prometheus.yml, Grafana datasource/dashboard provisioning
+├── scripts/                   # dev-up.sh: local stack bring-up + migrations
 └── config/tickers.yaml        # user-editable ticker/timeframe list
 ```
 
@@ -126,26 +127,27 @@ containers (tests, one-off scripts).
    .venv/Scripts/pip install -r services/ingestion/requirements.txt
    ```
 
-3. **Bring up the stack**
+3. **Bring up the stack and run migrations**
+   ```
+   ./scripts/dev-up.sh
+   ```
+   This runs `docker compose up -d --build`, waits for TimescaleDB to report
+   healthy, then applies Alembic migrations against it. Equivalent manual steps:
    ```
    docker compose up -d --build
-   ```
-   `docker-compose.override.yml` (applied automatically) exposes TimescaleDB,
-   the Prefect UI, MLflow, and Prometheus on `localhost` for local debugging —
-   the base file alone only publishes Grafana, matching the production VM.
-
-4. **Run migrations** (against the compose-managed TimescaleDB)
-   ```
    cd common
    POSTGRES_USER=quantpipe POSTGRES_PASSWORD=<from .env> POSTGRES_DB=quantpipe \
      POSTGRES_HOST=localhost POSTGRES_PORT=5432 \
      ../.venv/Scripts/python -m alembic upgrade head
    ```
+   `docker-compose.override.yml` (applied automatically) exposes TimescaleDB,
+   the Prefect UI, MLflow, and Prometheus on `localhost` for local debugging —
+   the base file alone only publishes Grafana, matching the production VM.
 
-5. **Open things up**: Grafana at `localhost:3000`, Prefect UI at `localhost:4200`,
+4. **Open things up**: Grafana at `localhost:3000`, Prefect UI at `localhost:4200`,
    MLflow at `localhost:5000`.
 
-6. **Edit `config/tickers.yaml`** to change which tickers/timeframes are tracked —
+5. **Edit `config/tickers.yaml`** to change which tickers/timeframes are tracked —
    it's bind-mounted into `ingestion-flows`, so a container restart (not a
    rebuild) picks up changes.
 
