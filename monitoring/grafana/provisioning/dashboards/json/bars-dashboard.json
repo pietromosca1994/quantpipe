@@ -33,15 +33,30 @@
   "panels": [
     {
       "id": 1,
-      "title": "$ticker close price ($timeframe)",
-      "type": "timeseries",
+      "title": "$ticker OHLC ($timeframe)",
+      "type": "candlestick",
       "datasource": { "type": "postgres", "uid": "TimescaleDB" },
-      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 0 },
+      "gridPos": { "h": 12, "w": 24, "x": 0, "y": 0 },
+      "options": {
+        "mode": "candles",
+        "candleStyle": "candles",
+        "colorStrategy": "open-close",
+        "colors": { "up": "green", "down": "red" },
+        "includeAllFields": false,
+        "fields": {
+          "open": "open",
+          "high": "high",
+          "low": "low",
+          "close": "close",
+          "volume": "volume"
+        }
+      },
+      "fieldConfig": { "defaults": {}, "overrides": [] },
       "targets": [
         {
           "datasource": { "type": "postgres", "uid": "TimescaleDB" },
-          "format": "time_series",
-          "rawSql": "SELECT time AS \"time\", close FROM bars_$timeframe WHERE ticker = '$ticker' AND $__timeFilter(time) ORDER BY time",
+          "format": "table",
+          "rawSql": "SELECT time AS \"time\", open, high, low, close, volume FROM bars_$timeframe WHERE ticker = '$ticker' AND $__timeFilter(time) ORDER BY time",
           "rawQuery": true
         }
       ]
@@ -51,7 +66,18 @@
       "title": "$ticker volume ($timeframe)",
       "type": "timeseries",
       "datasource": { "type": "postgres", "uid": "TimescaleDB" },
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 10 },
+      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 12 },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 80,
+            "lineWidth": 0,
+            "pointSize": 0
+          }
+        },
+        "overrides": []
+      },
       "targets": [
         {
           "datasource": { "type": "postgres", "uid": "TimescaleDB" },
