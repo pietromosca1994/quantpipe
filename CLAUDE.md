@@ -42,8 +42,8 @@ quantpipe/
 
 ## Data model quick reference
 
-- `bars_1m` (hypertable): `time, ticker, asset_class, open, high, low, close, volume, source` — uniqueness on `(ticker, time)`.
-- `predictions` (hypertable): `time, ticker, timeframe, model_version, horizon, yhat, yhat_lower, yhat_upper, generated_at`.
+- `bars_1m` (hypertable): `time, ticker, asset_class, open, high, low, close, volume, source, created_at, created_by` — uniqueness on `(ticker, time)`.
+- `predictions` (hypertable): `time, ticker, timeframe, model_version, horizon, yhat, yhat_lower, yhat_upper, mlflow_run_id, created_at, created_by`.
 - `model_registry` (plain table): `ticker, timeframe, mlflow_run_id, mlflow_model_uri, version, status (staging|production|archived), trained_at, metrics (jsonb)`.
 
 Full column/type detail and the continuous-aggregate definitions are in the vault's `data-model.md`.

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -21,6 +21,8 @@ class Bar(BaseModel):
     close: float = Field(ge=0)
     volume: float = Field(ge=0)
     source: Source = Source.ALPACA
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    created_by: str = "ingestion"
 
     @model_validator(mode="after")
     def _check_price_bounds(self) -> Bar:
@@ -46,7 +48,9 @@ class Prediction(BaseModel):
     yhat: float
     yhat_lower: float
     yhat_upper: float
-    generated_at: datetime
+    mlflow_run_id: str
+    created_at: datetime
+    created_by: str
 
 
 class ModelMetadata(BaseModel):

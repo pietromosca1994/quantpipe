@@ -41,6 +41,8 @@ def upgrade() -> None:
         sa.Column("close", sa.Numeric, nullable=False),
         sa.Column("volume", sa.Numeric, nullable=False),
         sa.Column("source", sa.String, nullable=False, server_default="alpaca"),
+        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("created_by", sa.String, nullable=False),
     )
     op.execute("SELECT create_hypertable('bars_1m', 'time')")
 
@@ -78,7 +80,9 @@ def upgrade() -> None:
         sa.Column("yhat", sa.Numeric, nullable=False),
         sa.Column("yhat_lower", sa.Numeric, nullable=False),
         sa.Column("yhat_upper", sa.Numeric, nullable=False),
-        sa.Column("generated_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("mlflow_run_id", sa.String, nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("created_by", sa.String, nullable=False),
     )
     op.execute("SELECT create_hypertable('predictions', 'time')")
 

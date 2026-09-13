@@ -74,7 +74,9 @@ def test_prediction_rejects_invalid_timeframe():
             yhat=1.0,
             yhat_lower=0.9,
             yhat_upper=1.1,
-            generated_at=_NOW,
+            mlflow_run_id="run-1",
+            created_at=_NOW,
+            created_by="inference",
         )
 
 

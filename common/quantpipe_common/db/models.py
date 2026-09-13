@@ -29,6 +29,8 @@ class Bar(Base):
     close: Mapped[float] = mapped_column(Numeric, nullable=False)
     volume: Mapped[float] = mapped_column(Numeric, nullable=False)
     source: Mapped[str] = mapped_column(String, nullable=False, default="alpaca")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_by: Mapped[str] = mapped_column(String, nullable=False)
 
 
 class Prediction(Base):
@@ -44,7 +46,9 @@ class Prediction(Base):
     yhat: Mapped[float] = mapped_column(Numeric, nullable=False)
     yhat_lower: Mapped[float] = mapped_column(Numeric, nullable=False)
     yhat_upper: Mapped[float] = mapped_column(Numeric, nullable=False)
-    generated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    mlflow_run_id: Mapped[str] = mapped_column(String, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_by: Mapped[str] = mapped_column(String, nullable=False)
 
 
 class ModelRegistryEntry(Base):
