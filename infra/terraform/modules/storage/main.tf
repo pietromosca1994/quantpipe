@@ -3,14 +3,14 @@
 # instance recreation, not just the database's.
 resource "oci_core_volume" "quantpipe_data" {
   compartment_id      = var.compartment_ocid
-  availability_domain = data.oci_identity_availability_domains.ads.availability_domains[0].name
+  availability_domain = var.availability_domain
   display_name        = "quantpipe-data-volume"
   size_in_gbs         = var.data_volume_size_in_gbs
 }
 
 resource "oci_core_volume_attachment" "quantpipe_data" {
   attachment_type = "iscsi"
-  instance_id     = oci_core_instance.quantpipe.id
+  instance_id     = var.instance_id
   volume_id       = oci_core_volume.quantpipe_data.id
 }
 

@@ -1,35 +1,15 @@
-variable "tenancy_ocid" {
-  description = "OCID of your OCI tenancy."
-  type        = string
-}
-
-variable "user_ocid" {
-  description = "OCID of the OCI user Terraform authenticates as."
-  type        = string
-}
-
-variable "fingerprint" {
-  description = "Fingerprint of the API signing key uploaded to that user."
-  type        = string
-}
-
-variable "private_key_path" {
-  description = "Path to the API signing key's private key file."
-  type        = string
-}
-
-variable "region" {
-  description = "OCI region, e.g. us-ashburn-1."
-  type        = string
-}
-
 variable "compartment_ocid" {
-  description = "OCID of the compartment to create resources in."
+  description = "OCID of the compartment to create the instance in."
   type        = string
 }
 
-variable "admin_ip" {
-  description = "Your public IP in CIDR form (e.g. 203.0.113.4/32), allowed to reach SSH and Grafana. Never left open to 0.0.0.0/0."
+variable "tenancy_ocid" {
+  description = "OCID of the OCI tenancy, used to look up availability domains."
+  type        = string
+}
+
+variable "subnet_id" {
+  description = "OCID of the subnet the instance's VNIC attaches to."
   type        = string
 }
 
@@ -65,12 +45,6 @@ variable "boot_volume_size_in_gbs" {
   description = "Size (GB) of the instance's boot volume."
   type        = number
   default     = 50
-}
-
-variable "data_volume_size_in_gbs" {
-  description = "Size of the Block Volume backing Docker's data root (all persistent container volumes, including TimescaleDB)."
-  type        = number
-  default     = 150
 }
 
 variable "repo_url" {

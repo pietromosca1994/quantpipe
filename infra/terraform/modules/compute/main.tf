@@ -20,7 +20,7 @@ resource "oci_core_instance" "quantpipe" {
   }
 
   create_vnic_details {
-    subnet_id        = oci_core_subnet.quantpipe.id
+    subnet_id        = var.subnet_id
     assign_public_ip = true
   }
 
