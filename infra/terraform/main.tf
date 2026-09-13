@@ -9,7 +9,7 @@ module "compute" {
   source = "./modules/compute"
 
   compartment_ocid        = var.compartment_ocid
-  tenancy_ocid            = var.tenancy_ocid
+  tenancy_ocid            = var.tenancy
   subnet_id               = module.network.subnet_id
   ssh_public_key_path     = var.ssh_public_key_path
   image_ocid              = var.image_ocid
@@ -23,7 +23,7 @@ module "storage" {
   source = "./modules/storage"
 
   compartment_ocid        = var.compartment_ocid
-  tenancy_ocid            = var.tenancy_ocid
+  tenancy_ocid            = var.tenancy
   availability_domain     = module.compute.availability_domain
   instance_id             = module.compute.instance_id
   data_volume_size_in_gbs = var.data_volume_size_in_gbs

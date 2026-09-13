@@ -23,7 +23,7 @@ variable "image_ocid" {
   description = <<-EOT
     OCID of the ARM (Ampere A1) boot image to use — region-specific, so look
     it up yourself, e.g.:
-      oci compute image list --compartment-id <tenancy_ocid> \
+      oci compute image list --compartment-id <your tenancy OCID> \
         --operating-system "Canonical Ubuntu" --shape "VM.Standard.A1.Flex"
   EOT
   type        = string

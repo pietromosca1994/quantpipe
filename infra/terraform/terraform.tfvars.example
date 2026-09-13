@@ -1,9 +1,13 @@
 # Copy to terraform.tfvars and fill in real values. Never commit terraform.tfvars.
+#
+# tenancy/user/fingerprint/key_file/region are named to match ~/.oci/config's
+# fields 1:1 — if you've already run `oci setup config`, copy those values
+# straight across instead of looking them up again.
 
-tenancy_ocid      = "ocid1.tenancy.oc1..aaaaaaaaxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-user_ocid         = "ocid1.user.oc1..aaaaaaaaxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+tenancy           = "ocid1.tenancy.oc1..aaaaaaaaxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+user              = "ocid1.user.oc1..aaaaaaaaxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 fingerprint       = "xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx"
-private_key_path  = "~/.oci/oci_api_key.pem"
+key_file          = "~/.oci/oci_api_key.pem"
 region            = "us-ashburn-1"
 compartment_ocid  = "ocid1.compartment.oc1..aaaaaaaaxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 

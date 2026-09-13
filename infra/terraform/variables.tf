@@ -1,25 +1,25 @@
-variable "tenancy_ocid" {
-  description = "OCID of your OCI tenancy."
+variable "tenancy" {
+  description = "OCID of your OCI tenancy. Named to match the `tenancy` field in ~/.oci/config, so you can copy it straight across."
   type        = string
 }
 
-variable "user_ocid" {
-  description = "OCID of the OCI user Terraform authenticates as."
+variable "user" {
+  description = "OCID of the OCI user Terraform authenticates as. Named to match the `user` field in ~/.oci/config."
   type        = string
 }
 
 variable "fingerprint" {
-  description = "Fingerprint of the API signing key uploaded to that user."
+  description = "Fingerprint of the API signing key uploaded to that user. Matches the `fingerprint` field in ~/.oci/config."
   type        = string
 }
 
-variable "private_key_path" {
-  description = "Path to the API signing key's private key file."
+variable "key_file" {
+  description = "Path to the API signing key's private key file. Named to match the `key_file` field in ~/.oci/config."
   type        = string
 }
 
 variable "region" {
-  description = "OCI region, e.g. us-ashburn-1."
+  description = "OCI region, e.g. us-ashburn-1. Matches the `region` field in ~/.oci/config."
   type        = string
 }
 
@@ -43,7 +43,7 @@ variable "image_ocid" {
   description = <<-EOT
     OCID of the ARM (Ampere A1) boot image to use — region-specific, so look
     it up yourself, e.g.:
-      oci compute image list --compartment-id <tenancy_ocid> \
+      oci compute image list --compartment-id <your tenancy OCID> \
         --operating-system "Canonical Ubuntu" --shape "VM.Standard.A1.Flex"
   EOT
   type        = string
