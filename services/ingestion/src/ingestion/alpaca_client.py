@@ -60,7 +60,11 @@ class AlpacaBarsClient:
     def fetch_latest_bars(self, tickers: Sequence[TickerConfig], lookback: timedelta) -> list[Bar]:
         end = datetime.now(UTC)
         start = end - lookback
+        return self.fetch_bars_range(tickers, start=start, end=end)
 
+    def fetch_bars_range(
+        self, tickers: Sequence[TickerConfig], start: datetime, end: datetime
+    ) -> list[Bar]:
         equities = [t.symbol for t in tickers if t.asset_class == AssetClass.US_EQUITY]
         cryptos = [t.symbol for t in tickers if t.asset_class == AssetClass.CRYPTO]
 

@@ -105,7 +105,7 @@ quantpipe/
 │   └── prefect_flows/        # deployments.py: schedules, kept separate from flow logic
 ├── common/quantpipe_common/  # shared package: config/schemas, SQLAlchemy models, session factory, Alembic migrations
 ├── monitoring/                # prometheus.yml, Grafana datasource/dashboard provisioning
-├── scripts/                   # dev-up.sh: local stack bring-up + migrations
+├── scripts/                   # dev-up.sh (stack bring-up + migrations), backfill.sh (historical backfill)
 └── config/tickers.yaml        # user-editable ticker/timeframe list
 ```
 
@@ -144,10 +144,19 @@ containers (tests, one-off scripts).
    the Prefect UI, MLflow, and Prometheus on `localhost` for local debugging —
    the base file alone only publishes Grafana, matching the production VM.
 
-4. **Open things up**: Grafana at `localhost:3000`, Prefect UI at `localhost:4200`,
+4. **Backfill history** (optional but recommended before relying on dashboards)
+   ```
+   ./scripts/backfill.sh --days 30
+   ```
+   Periodic ingestion only looks back 5 minutes per cycle, so a fresh database
+   has no history until this runs. Safe to run anytime, before or after
+   `ingestion-flows` starts — it upserts on `(time, ticker)` the same way
+   periodic ingestion does, so re-running never duplicates rows.
+
+5. **Open things up**: Grafana at `localhost:3000`, Prefect UI at `localhost:4200`,
    MLflow at `localhost:5000`.
 
-5. **Edit `config/tickers.yaml`** to change which tickers/timeframes are tracked —
+6. **Edit `config/tickers.yaml`** to change which tickers/timeframes are tracked —
    it's bind-mounted into `ingestion-flows`, so a container restart (not a
    rebuild) picks up changes.
 

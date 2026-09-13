@@ -52,6 +52,20 @@ def test_fetch_latest_bars_routes_equities_and_crypto_to_the_right_client(client
     client._stock_client.get_stock_bars.assert_called_once()
 
 
+def test_fetch_bars_range_queries_the_given_start_and_end(client):
+    client._stock_client.get_stock_bars.return_value = SimpleNamespace(data={"AAPL": [_raw_bar()]})
+    tickers = [TickerConfig(symbol="AAPL", asset_class="us_equity")]
+    start = _NOW - timedelta(days=30)
+
+    bars = client.fetch_bars_range(tickers, start=start, end=_NOW)
+
+    assert {bar.ticker for bar in bars} == {"AAPL"}
+    # alpaca-py's request model stores naive UTC datetimes internally.
+    request = client._stock_client.get_stock_bars.call_args[0][0]
+    assert request.start == start.replace(tzinfo=None)
+    assert request.end == _NOW.replace(tzinfo=None)
+
+
 def test_fetch_latest_bars_skips_asset_class_with_no_tickers(client):
     client._stock_client.get_stock_bars.return_value = SimpleNamespace(
         data={"AAPL": [_raw_bar()]}
