@@ -43,16 +43,23 @@ services:
     restart: unless-stopped
 
   # No separate "prefect-worker" container: services/prefect_flows/deployments.py
-  # uses Prefect's `serve()` API, which self-schedules and executes flow runs
-  # in this same process — simpler than a work-pool + worker for a single-VM
-  # deployment with no need for per-run container isolation yet. Revisit if
+  # uses Prefect's `serve()` API, which self-schedules flow runs and stays in
+  # this container — simpler than a work-pool + worker for a single-VM
+  # deployment with no need for per-run *container* isolation yet. Revisit if
   # training later needs isolated/GPU work-pool execution.
+  #
+  # serve() still spawns each flow run in its own subprocess (Prefect's
+  # Runner does this even without a work pool), so PROMETHEUS_MULTIPROC_DIR
+  # is required — without it, the metrics ingest_bars() records would live
+  # only in that short-lived subprocess and never reach the /metrics this
+  # container's long-lived process exposes. See ingestion/metrics.py.
   ingestion-flows:
     build:
       context: .
       dockerfile: services/prefect_flows/Dockerfile
     environment:
       <<: *app-env
+      PROMETHEUS_MULTIPROC_DIR: /tmp/prometheus_multiproc
     volumes:
       - ./config:/app/config:ro
     depends_on:

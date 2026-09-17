@@ -7,11 +7,24 @@ service) to keep every deployment below scheduled and served.
 from __future__ import annotations
 
 import logging
+import os
+import shutil
 
-from ingestion.backfill import backfill
-from ingestion.flow import ingest_bars
-from ingestion.metrics import start_metrics_server
-from prefect import serve
+# Must run before any ingestion.* import below — they transitively import
+# ingestion.metrics, which constructs its Counters/Histogram (and thus opens
+# their PROMETHEUS_MULTIPROC_DIR value files) at module-import time. This is
+# the one place in the process tree that should wipe stale files left behind
+# by a previous container run: every flow-run subprocess serve() spawns
+# re-imports ingestion.metrics too, and wiping there would race the still-
+# running main process (and any sibling in-flight subprocess).
+_multiproc_dir = os.environ.get("PROMETHEUS_MULTIPROC_DIR")
+if _multiproc_dir:
+    shutil.rmtree(_multiproc_dir, ignore_errors=True)
+
+from ingestion.backfill import backfill  # noqa: E402
+from ingestion.flow import ingest_bars  # noqa: E402
+from ingestion.metrics import start_metrics_server  # noqa: E402
+from prefect import serve  # noqa: E402
 
 logger = logging.getLogger(__name__)
 

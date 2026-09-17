@@ -10,34 +10,34 @@
   "panels": [
     {
       "id": 1,
-      "title": "Ingestion rows written / sec",
+      "title": "Ingestion rows written / hr",
       "type": "timeseries",
       "datasource": { "type": "prometheus", "uid": "Prometheus" },
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "Prometheus" },
-          "expr": "rate(quantpipe_ingest_rows_written_total[5m])",
-          "legendFormat": "rows/s"
+          "expr": "rate(quantpipe_ingest_rows_written_total[1h]) * 3600",
+          "legendFormat": "rows/hr"
         }
       ]
     },
     {
       "id": 2,
-      "title": "Ingestion errors / sec",
+      "title": "Ingestion errors / hr",
       "type": "timeseries",
       "datasource": { "type": "prometheus", "uid": "Prometheus" },
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "Prometheus" },
-          "expr": "rate(quantpipe_ingest_errors_total[5m])",
-          "legendFormat": "errors/s"
+          "expr": "rate(quantpipe_ingest_errors_total[1h]) * 3600",
+          "legendFormat": "errors/hr"
         },
         {
           "datasource": { "type": "prometheus", "uid": "Prometheus" },
-          "expr": "rate(quantpipe_alpaca_rate_limit_hits_total[5m])",
-          "legendFormat": "alpaca rate-limit hits/s"
+          "expr": "rate(quantpipe_alpaca_rate_limit_hits_total[1h]) * 3600",
+          "legendFormat": "alpaca rate-limit hits/hr"
         }
       ]
     },
