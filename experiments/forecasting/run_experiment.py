@@ -25,6 +25,12 @@ DEFAULT_MIN_TRAIN_FRACTION = 0.6
 DEFAULT_INTERVAL = 0.8
 DEFAULT_MAX_FOLDS = 8
 DEFAULT_REPORT_HTML = "experiments/output/report.html"
+# 1m history is ~100k+ bars/year — every model here is far slower to backtest
+# at that size (minutes-to-hours per fold for the neural models), and
+# auto_arima's exogenous-regression path outright OOMs on it (see README's
+# "Feature support per model" note). Excluded from the default sweep; still
+# runnable explicitly via `--timeframes 1m`.
+DEFAULT_TIMEFRAMES = [tf.value for tf in Timeframe if tf != Timeframe.ONE_MINUTE]
 
 
 def _min_train_size(n_observations: int, fraction: float) -> int:
@@ -75,19 +81,33 @@ def run_one(
                 "ticker": ticker,
                 "timeframe": timeframe.value,
                 "horizon": horizon,
+                "interval": interval,
                 "n_folds": len(folds),
             }
         )
         for name in model_names:
             factory = MODEL_REGISTRY[name]
             with mlflow.start_run(run_name=name, nested=True):
-                mlflow.log_param("model", name)
+                # Mirrored from the parent run so a model run is self-describing
+                # in the MLflow UI (filterable/comparable) without walking up
+                # the run tree to see what horizon/interval it was backtested at.
+                mlflow.log_params(
+                    {
+                        "model": name,
+                        "ticker": ticker,
+                        "timeframe": timeframe.value,
+                        "horizon": horizon,
+                        "interval": interval,
+                    }
+                )
                 try:
                     fold_results = run_backtest(
                         functools.partial(factory, horizon, interval),
                         bundle.series,
                         folds,
                         interval=interval,
+                        past_covariates=bundle.past_covariates,
+                        future_covariates=bundle.future_covariates,
                     )
                 except Exception:
                     logger.exception(
@@ -128,8 +148,8 @@ def arg_parse() -> Namespace:
     parser.add_argument(
         "--timeframes",
         nargs="*",
-        default=[tf.value for tf in Timeframe],
-        help="Subset of timeframes to run",
+        default=DEFAULT_TIMEFRAMES,
+        help="Subset of timeframes to run (default: all except 1m — see README)",
     )
     parser.add_argument(
         "--models", nargs="*", default=list(MODEL_REGISTRY), help="Subset of model names to run"
@@ -163,6 +183,16 @@ def main() -> None:
 
     runs: list[TickerTimeframeRun] = []
     with mlflow.start_run(run_name="comparison"):
+        mlflow.log_params(
+            {
+                "tickers": ",".join(tickers),
+                "timeframes": ",".join(sorted(tf.value for tf in requested_timeframes)),
+                "models": ",".join(args.models),
+                "horizon": args.horizon,
+                "interval": args.interval,
+                "max_folds": args.max_folds,
+            }
+        )
         for ticker in tickers:
             available = timeframe_by_ticker.get(ticker, set())
             for timeframe in sorted(requested_timeframes & available, key=lambda tf: tf.value):

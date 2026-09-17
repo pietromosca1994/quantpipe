@@ -42,6 +42,39 @@ class _LastValueForecaster(BaseForecaster):
         )
 
 
+class _CovariateSpyForecaster(BaseForecaster):
+    """Records the covariates it was actually called with — used to assert
+    run_backtest slices/forwards them correctly, not to produce real forecasts.
+    """
+
+    name = "covariate_spy"
+    fit_calls: list[tuple[int, int | None, int | None]] = []
+    predict_calls: list[tuple[int | None, int | None]] = []
+
+    def fit(self, series, past_covariates=None, future_covariates=None):
+        self._last = series.values(copy=False).flatten()[-1]
+        self.fit_calls.append(
+            (
+                len(series),
+                None if past_covariates is None else len(past_covariates),
+                None if future_covariates is None else len(future_covariates),
+            )
+        )
+        return self
+
+    def predict(self, horizon, interval=0.8, past_covariates=None, future_covariates=None):
+        self.predict_calls.append(
+            (
+                None if past_covariates is None else len(past_covariates),
+                None if future_covariates is None else len(future_covariates),
+            )
+        )
+        yhat = np.full(horizon, self._last)
+        return ForecastResult(
+            yhat=yhat, yhat_lower=yhat - 1, yhat_upper=yhat + 1, lower_quantile=0.1, upper_quantile=0.9
+        )
+
+
 def test_walk_forward_folds_produces_expanding_windows():
     folds = walk_forward_folds(n_observations=10, horizon=2, min_train_size=6, step=2)
 
@@ -65,3 +98,41 @@ def test_run_backtest_scores_each_fold_against_the_right_actuals():
     np.testing.assert_array_equal(first.actual, values[4:6])
     np.testing.assert_array_equal(first.forecast.yhat, [values[3], values[3]])
     assert first.metrics["mae"] == np.mean(np.abs(values[4:6] - values[3]))
+
+
+def test_run_backtest_truncates_past_covariates_but_extends_future_covariates():
+    _CovariateSpyForecaster.fit_calls = []
+    _CovariateSpyForecaster.predict_calls = []
+
+    values = np.array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0])
+    series = _FakeSeries(values)
+    past_covariates = _FakeSeries(values * 10)
+    future_covariates = _FakeSeries(values * 100)
+    folds = walk_forward_folds(n_observations=len(values), horizon=2, min_train_size=4, step=2)
+
+    run_backtest(
+        _CovariateSpyForecaster,
+        series,
+        folds,
+        interval=0.8,
+        past_covariates=past_covariates,
+        future_covariates=future_covariates,
+    )
+
+    # fold 1: train_end=4, horizon=2 -> past truncated to 4, future extends to 6
+    # fold 2: train_end=6, horizon=2 -> past truncated to 6, future extends to 8
+    assert _CovariateSpyForecaster.fit_calls == [(4, 4, 6), (6, 6, 8)]
+    assert _CovariateSpyForecaster.predict_calls == [(4, 6), (6, 8)]
+
+
+def test_run_backtest_omits_covariate_kwargs_when_none_provided():
+    values = np.array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0])
+    series = _FakeSeries(values)
+    folds = walk_forward_folds(n_observations=len(values), horizon=2, min_train_size=4, step=2)
+
+    # _LastValueForecaster.fit/predict don't accept covariate kwargs at all —
+    # this only passes if run_backtest doesn't force them through when unset,
+    # mirroring how a real Darts model without covariate support behaves.
+    results = run_backtest(_LastValueForecaster, series, folds, interval=0.8)
+
+    assert len(results) == 1

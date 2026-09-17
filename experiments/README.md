@@ -40,6 +40,31 @@ Assumes `requirements-dev.txt` is already installed per the root README's
 local dev setup, and the same `POSTGRES_*` env vars ingestion uses (from
 `.env`) are available in the shell.
 
+## Feature support per model
+
+Besides close price, `load_series` also computes two covariate series per
+(ticker, timeframe) — `log_volume`/`lagged_return`/`rolling_volatility` as
+"past" covariates (only known once a bar has closed) and cyclically-encoded
+`hour_sin`/`hour_cos`/`dow_sin`/`dow_cos` as "future" covariates (calendar
+features, known ahead of time). Not every model family can use both:
+
+| Model | past covariates | future covariates |
+|---|---|---|
+| naive_seasonal, naive_drift, ets, theta | no | no |
+| auto_arima | no | yes¹ |
+| lightgbm | yes | yes |
+| nbeats, nhits | yes | no |
+
+`BaseForecaster` subclasses drop any covariate type their underlying Darts
+model doesn't support (`base.covariate_kwargs`), so `run_one` always passes
+both — no per-model branching needed when adding a ticker/timeframe.
+
+¹ auto_arima's exogenous-regression path (statsforecast) does a full-size
+SVD that runs out of memory on 1m-bar history (~100k rows) — it works on
+5m/15m/1h/1d. This fails per-model, not per-run: `run_one` catches and logs
+it, so a 1m sweep still completes with auto_arima simply missing from that
+one timeframe's results.
+
 ## Before trusting this against your installed Darts version
 
 The exact method Darts uses to pull a quantile out of a probabilistic

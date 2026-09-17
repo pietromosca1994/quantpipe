@@ -49,10 +49,44 @@ class BaseForecaster(ABC):
     name: str
 
     @abstractmethod
-    def fit(self, series: TimeSeries) -> BaseForecaster: ...
+    def fit(
+        self,
+        series: TimeSeries,
+        past_covariates: TimeSeries | None = None,
+        future_covariates: TimeSeries | None = None,
+    ) -> BaseForecaster: ...
 
     @abstractmethod
-    def predict(self, horizon: int, interval: float = 0.8) -> ForecastResult: ...
+    def predict(
+        self,
+        horizon: int,
+        interval: float = 0.8,
+        past_covariates: TimeSeries | None = None,
+        future_covariates: TimeSeries | None = None,
+    ) -> ForecastResult: ...
+
+
+def covariate_kwargs(
+    model,
+    past_covariates: TimeSeries | None = None,
+    future_covariates: TimeSeries | None = None,
+) -> dict[str, TimeSeries]:
+    """Forward only the covariate types a given Darts model actually declares
+    support for (`model.supports_past_covariates`/`supports_future_covariates`).
+
+    Several model families here (naive baselines, ETS, Theta) don't accept a
+    `past_covariates`/`future_covariates` parameter on fit()/predict() at
+    all — passing one raises TypeError, not just a no-op — so every
+    BaseForecaster subclass runs its covariates through this before calling
+    the underlying Darts model, even if it always receives both from
+    run_backtest.
+    """
+    kwargs: dict[str, TimeSeries] = {}
+    if past_covariates is not None and getattr(model, "supports_past_covariates", False):
+        kwargs["past_covariates"] = past_covariates
+    if future_covariates is not None and getattr(model, "supports_future_covariates", False):
+        kwargs["future_covariates"] = future_covariates
+    return kwargs
 
 
 def interval_to_quantiles(interval: float) -> tuple[float, float]:
@@ -97,6 +131,8 @@ def predict_with_auto_interval(
     interval: float,
     step_back: int = 1,
     num_samples: int = 500,
+    past_covariates: TimeSeries | None = None,
+    future_covariates: TimeSeries | None = None,
 ) -> ForecastResult:
     """Shared predict-with-interval glue for any fitted Darts model.
 
@@ -108,8 +144,9 @@ def predict_with_auto_interval(
     baselines, or AutoARIMA depending on backend/version).
     """
     lower_q, upper_q = interval_to_quantiles(interval)
+    predict_kwargs = covariate_kwargs(model, past_covariates, future_covariates)
     if getattr(model, "supports_probabilistic_prediction", False):
-        pred = model.predict(horizon, num_samples=num_samples)
+        pred = model.predict(horizon, num_samples=num_samples, **predict_kwargs)
         return result_from_stochastic_series(pred, interval)
 
     # Imported here, not at module level, so importing base.py (and therefore
@@ -117,7 +154,7 @@ def predict_with_auto_interval(
     # unless a model actually falls back to this residual-based interval.
     from scipy.stats import norm
 
-    point = model.predict(horizon).values(copy=False).flatten()
+    point = model.predict(horizon, **predict_kwargs).values(copy=False).flatten()
     resid_std = _residual_std(fitted_values, step_back)
     z = norm.ppf(upper_q)
     steps = np.arange(1, len(point) + 1)

@@ -24,12 +24,25 @@ class NaiveSeasonalForecaster(BaseForecaster):
         self._model = NaiveSeasonal(K=seasonal_period)
         self._fitted_values: np.ndarray = np.array([])
 
-    def fit(self, series: TimeSeries) -> NaiveSeasonalForecaster:
+    def fit(
+        self,
+        series: TimeSeries,
+        past_covariates: TimeSeries | None = None,
+        future_covariates: TimeSeries | None = None,
+    ) -> NaiveSeasonalForecaster:
+        # Darts' NaiveSeasonal doesn't accept covariates at all — ignored here
+        # so this still satisfies the common BaseForecaster.fit() signature.
         self._model.fit(series)
         self._fitted_values = series.values(copy=False).flatten()
         return self
 
-    def predict(self, horizon: int, interval: float = 0.8) -> ForecastResult:
+    def predict(
+        self,
+        horizon: int,
+        interval: float = 0.8,
+        past_covariates: TimeSeries | None = None,
+        future_covariates: TimeSeries | None = None,
+    ) -> ForecastResult:
         return predict_with_auto_interval(
             self._model,
             self._fitted_values,
@@ -50,10 +63,23 @@ class NaiveDriftForecaster(BaseForecaster):
         self._model = NaiveDrift()
         self._fitted_values: np.ndarray = np.array([])
 
-    def fit(self, series: TimeSeries) -> NaiveDriftForecaster:
+    def fit(
+        self,
+        series: TimeSeries,
+        past_covariates: TimeSeries | None = None,
+        future_covariates: TimeSeries | None = None,
+    ) -> NaiveDriftForecaster:
+        # Darts' NaiveDrift doesn't accept covariates at all — ignored here so
+        # this still satisfies the common BaseForecaster.fit() signature.
         self._model.fit(series)
         self._fitted_values = series.values(copy=False).flatten()
         return self
 
-    def predict(self, horizon: int, interval: float = 0.8) -> ForecastResult:
+    def predict(
+        self,
+        horizon: int,
+        interval: float = 0.8,
+        past_covariates: TimeSeries | None = None,
+        future_covariates: TimeSeries | None = None,
+    ) -> ForecastResult:
         return predict_with_auto_interval(self._model, self._fitted_values, horizon, interval)

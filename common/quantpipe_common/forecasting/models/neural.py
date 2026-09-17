@@ -7,6 +7,7 @@ from darts.utils.likelihood_models import QuantileRegression
 from quantpipe_common.forecasting.base import (
     BaseForecaster,
     ForecastResult,
+    covariate_kwargs,
     interval_to_quantiles,
     result_from_stochastic_series,
 )
@@ -20,6 +21,10 @@ class _QuantileNeuralForecaster(BaseForecaster):
     QuantileRegression likelihood — same fixed-interval-at-construction
     constraint as LightGbmForecaster and for the same reason (quantile heads
     are trained, not chosen at predict time). Subclasses set `self._model`.
+
+    Both NBEATSModel and NHiTSModel support past_covariates (e.g. volume,
+    realized volatility) out of the box, but neither supports
+    future_covariates — `covariate_kwargs` drops it automatically.
     """
 
     _model: object
@@ -27,17 +32,29 @@ class _QuantileNeuralForecaster(BaseForecaster):
     def __init__(self, interval: float) -> None:
         self._interval = interval
 
-    def fit(self, series: TimeSeries) -> _QuantileNeuralForecaster:
-        self._model.fit(series)
+    def fit(
+        self,
+        series: TimeSeries,
+        past_covariates: TimeSeries | None = None,
+        future_covariates: TimeSeries | None = None,
+    ) -> _QuantileNeuralForecaster:
+        self._model.fit(series, **covariate_kwargs(self._model, past_covariates, future_covariates))
         return self
 
-    def predict(self, horizon: int, interval: float = 0.8) -> ForecastResult:
+    def predict(
+        self,
+        horizon: int,
+        interval: float = 0.8,
+        past_covariates: TimeSeries | None = None,
+        future_covariates: TimeSeries | None = None,
+    ) -> ForecastResult:
         if abs(interval - self._interval) > 1e-9:
             raise ValueError(
                 f"{self.name} was constructed for interval={self._interval}; "
                 f"got predict(interval={interval}). Construct a new instance to change it."
             )
-        pred = self._model.predict(horizon, num_samples=_NUM_SAMPLES)
+        predict_kwargs = covariate_kwargs(self._model, past_covariates, future_covariates)
+        pred = self._model.predict(horizon, num_samples=_NUM_SAMPLES, **predict_kwargs)
         return result_from_stochastic_series(pred, interval)
 
 

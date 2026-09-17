@@ -30,9 +30,26 @@ MODEL_REGISTRY: dict[str, Callable[[int, float], BaseForecaster]] = {
     "naive_drift": lambda horizon, interval: NaiveDriftForecaster(),
     "ets": lambda horizon, interval: EtsForecaster(),
     "theta": lambda horizon, interval: ThetaForecaster(),
+    # AutoARIMA is the only statistical model that can use covariates here —
+    # it takes future_covariates (the time-derived ones) as exogenous
+    # regressors; ETS/Theta support neither. Known limitation: statsforecast's
+    # exogenous-regression path does a full-size SVD, which OOMs on 1m-bar
+    # history (~100k rows) — fine on 5m/15m/1h/1d. run_one() already catches
+    # and skips a failing model per (ticker, timeframe), so this degrades to
+    # "auto_arima has no covariates on 1m" rather than crashing the sweep.
     "auto_arima": lambda horizon, interval: ArimaForecaster(),
+    # output_chunk_length=horizon (not 1) so this forecasts the whole horizon
+    # directly rather than autoregressively — see LightGbmForecaster's
+    # docstring for why that matters once past_covariates are involved.
+    # lags_future_covariates=(0, horizon): no history of the future covariate
+    # needed, just its already-known values for the current step through the
+    # rest of the forecast horizon.
     "lightgbm": lambda horizon, interval: LightGbmForecaster(
-        lags=max(20, 4 * horizon), interval=interval
+        lags=max(20, 4 * horizon),
+        output_chunk_length=horizon,
+        lags_past_covariates=max(20, 4 * horizon),
+        lags_future_covariates=(0, horizon),
+        interval=interval,
     ),
     "nbeats": lambda horizon, interval: NBeatsForecaster(
         input_chunk_length=max(60, 8 * horizon),

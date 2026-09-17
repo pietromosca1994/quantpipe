@@ -51,19 +51,41 @@ def run_backtest(
     series: TimeSeries,
     folds: list[Fold],
     interval: float = 0.8,
+    past_covariates: TimeSeries | None = None,
+    future_covariates: TimeSeries | None = None,
 ) -> list[FoldResult]:
     """Fit-predict-score a fresh model instance per fold. Each fold retrains
     from scratch on its own expanding training window — never reuse a fitted
     model across folds, or later folds leak information about how well it did
     on data it was never actually blind to.
+
+    `past_covariates` (e.g. volume, realized volatility) is truncated to the
+    same train_end as the target series each fold — a model must never see a
+    covariate value it couldn't actually have known yet. `future_covariates`
+    (e.g. hour-of-day, day-of-week) is calendar-derived and legitimately known
+    ahead of time, so its slice extends through the fold's forecast window too.
+    Forecasters that don't support a given covariate type ignore it (see
+    `base.covariate_kwargs`) — this function passes both through unconditionally.
     """
     values = series.values(copy=False).flatten()
     results = []
     for fold in folds:
         train_series = series[: fold.train_end]
         model = forecaster_factory()
-        model.fit(train_series)
-        forecast = model.predict(fold.horizon, interval=interval)
+
+        fit_kwargs: dict[str, TimeSeries] = {}
+        predict_kwargs: dict[str, TimeSeries] = {}
+        if past_covariates is not None:
+            train_past_covariates = past_covariates[: fold.train_end]
+            fit_kwargs["past_covariates"] = train_past_covariates
+            predict_kwargs["past_covariates"] = train_past_covariates
+        if future_covariates is not None:
+            fold_future_covariates = future_covariates[: fold.train_end + fold.horizon]
+            fit_kwargs["future_covariates"] = fold_future_covariates
+            predict_kwargs["future_covariates"] = fold_future_covariates
+
+        model.fit(train_series, **fit_kwargs)
+        forecast = model.predict(fold.horizon, interval=interval, **predict_kwargs)
         actual = values[fold.train_end : fold.train_end + fold.horizon]
         previous = values[fold.train_end - 1 : fold.train_end + fold.horizon - 1]
         results.append(
