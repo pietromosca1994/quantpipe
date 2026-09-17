@@ -237,3 +237,6 @@ crash.*.log
 mlruns/
 mlflow-artifacts/
 
+# Generated experiment comparison reports (experiments/forecasting/run_experiment.py)
+experiments/output/
+

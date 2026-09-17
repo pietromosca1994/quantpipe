@@ -1,0 +1,15 @@
+# Not installed by any service — this is a local research/backtesting harness,
+# never built into a container. See experiments/README.md.
+#
+# The forecasting core (BaseForecaster, model wrappers, backtest engine,
+# metrics — darts/scipy included) lives in quantpipe_common.forecasting and is
+# installed via the `forecasting` extra on the shared package, not listed
+# again here:
+#
+#   .venv/Scripts/pip install -e "./common[forecasting]"
+#
+# This file only has what's specific to running/reporting the comparison
+# sweep itself.
+mlflow~=2.17
+plotly~=5.24
+pandas~=2.2

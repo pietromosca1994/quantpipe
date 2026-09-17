@@ -16,7 +16,7 @@ from ingestion.metrics import INGEST_CYCLE_SECONDS, INGEST_ERRORS, INGEST_ROWS_W
 logger = logging.getLogger(__name__)
 
 DEFAULT_TICKERS_CONFIG_PATH = "config/tickers.yaml"
-FETCH_LOOKBACK = timedelta(minutes=5)
+FETCH_LOOKBACK = timedelta(minutes=10)
 
 
 @task(retries=3, retry_delay_seconds=10)
@@ -57,7 +57,7 @@ def upsert_bars(bars: list[Bar]) -> int:
 def ingest_bars(config_path: str = DEFAULT_TICKERS_CONFIG_PATH) -> int:
     """Fetch the latest 1-minute bars for every configured ticker and upsert into bars_1m.
 
-    This is the only ingestion path — bars_15m/1h/1d are TimescaleDB continuous
+    This is the only ingestion path — bars_5m/15m/1h/1d are TimescaleDB continuous
     aggregates derived from bars_1m, never written here.
     """
     with INGEST_CYCLE_SECONDS.time():

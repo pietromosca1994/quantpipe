@@ -9,11 +9,14 @@ select = ["E", "F", "I", "UP", "B"]
 testpaths = [
     "common/tests",
     "services/ingestion/tests",
+    "experiments/tests",
 ]
 pythonpath = [
     "common",
     "services/ingestion/src",
+    "experiments",
 ]
-# common/tests and services/ingestion/tests both package as "tests" — importlib
-# mode resolves each by file path instead of colliding on that shared name.
+# common/tests, services/ingestion/tests, and experiments/tests all package as
+# "tests" — importlib mode resolves each by file path instead of colliding on
+# that shared name.
 addopts = "--import-mode=importlib"

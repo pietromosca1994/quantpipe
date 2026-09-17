@@ -6,12 +6,25 @@ service) to keep every deployment below scheduled and served.
 
 from __future__ import annotations
 
+import logging
+
+from ingestion.backfill import backfill
 from ingestion.flow import ingest_bars
 from ingestion.metrics import start_metrics_server
 from prefect import serve
 
+logger = logging.getLogger(__name__)
+
 INGEST_BARS_INTERVAL_SECONDS = 120
 METRICS_PORT = 8000
+
+# ingest_bars only looks back FETCH_LOOKBACK (10 minutes), so any downtime
+# between this process stopping and restarting (crash, redeploy, VM reboot)
+# would otherwise leave a permanent gap in bars_1m. A few days comfortably
+# covers realistic downtime while staying cheap to re-run on every restart —
+# backfill() upserts on (time, ticker), so re-fetching already-ingested bars
+# is a no-op.
+STARTUP_BACKFILL_DAYS = 3
 
 
 def main() -> None:
@@ -19,6 +32,14 @@ def main() -> None:
     # ingestion-flows service) — start the /metrics endpoint here, not in
     # flow.py's __main__, since that path isn't used when serve()d.
     start_metrics_server(port=METRICS_PORT)
+
+    try:
+        backfill(days=STARTUP_BACKFILL_DAYS)
+    except Exception:
+        # Don't let a startup backfill failure (e.g. Alpaca down, bad creds)
+        # crash-loop the whole ingestion service — periodic ingest_bars still
+        # runs on schedule below and will keep the gap from growing further.
+        logger.exception("startup backfill failed; continuing without it")
 
     ingest_deployment = ingest_bars.to_deployment(
         name="ingest-bars",

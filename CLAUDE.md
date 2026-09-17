@@ -24,6 +24,7 @@ quantpipe/
 │   ├── inference/             # resolves production model -> predicts -> writes to predictions
 │   └── prefect_flows/         # deployments.py: schedules for all three flows, kept separate from flow logic
 ├── common/quantpipe_common/   # shared package: Pydantic config/schemas, SQLAlchemy models, session factory, Alembic migrations
+├── experiments/                # research harness: backtests candidate forecasting models, not deployed
 ├── monitoring/                # prometheus.yml, Grafana datasource/dashboard provisioning
 └── config/tickers.yaml        # user-editable ticker/timeframe list, read via quantpipe_common.config
 ```
@@ -32,10 +33,10 @@ quantpipe/
 
 ## Core architectural principles (apply these when adding anything)
 
-1. **Ingest only the finest granularity.** `bars_1m` is the only table ingestion ever writes to. `bars_15m`/`bars_1h`/`bars_1d` are TimescaleDB **continuous aggregates** derived from it, not separately ingested tables — adding a timeframe is a migration, not a new ingestion job. Never add a second ingestion path for a coarser timeframe.
+1. **Ingest only the finest granularity.** `bars_1m` is the only table ingestion ever writes to. `bars_5m`/`bars_15m`/`bars_1h`/`bars_1d` are TimescaleDB **continuous aggregates** derived from it, not separately ingested tables — adding a timeframe is a migration, not a new ingestion job. Never add a second ingestion path for a coarser timeframe.
 2. **Pydantic at the boundary, SQLAlchemy at the database.** Every external input (Alpaca API responses, `config/tickers.yaml`, env-derived settings via `pydantic-settings`) is validated into a Pydantic model first. Every DB read/write goes through SQLAlchemy ORM models (`Bar`, `Prediction`, `ModelRegistryEntry`) managed by Alembic migrations. Pydantic objects are converted to ORM objects/dicts immediately before persistence — don't let validation and persistence concerns mix in the same object.
 3. **MLflow's registry is the only source of truth for "current production model."** Training logs runs and promotes to `Production` only after an explicit metric comparison against the current Production version (never "always promote newest"). The `model_registry` Postgres table is a queryable cache of MLflow's state, kept in sync by the training service on every promotion — inference reads that table, not the MLflow API, on each cycle.
-4. **Prefect owns all scheduling.** Ingestion, training, and inference cadence, retries, and run history all live in Prefect deployments (`services/prefect_flows/deployments.py`), not in ad hoc cron/sleep loops inside a service. Training cadence is matched to timeframe (e.g. `1m`/`15m` daily, `1h`/`1d` weekly-or-monthly) — don't retrain a coarse-timeframe model on a fine-timeframe schedule.
+4. **Prefect owns all scheduling.** Ingestion, training, and inference cadence, retries, and run history all live in Prefect deployments (`services/prefect_flows/deployments.py`), not in ad hoc cron/sleep loops inside a service. Training cadence is matched to timeframe (e.g. `1m`/`5m`/`15m` daily, `1h`/`1d` weekly-or-monthly) — don't retrain a coarse-timeframe model on a fine-timeframe schedule.
 5. **Every service is observable the same way.** Each of ingestion/training/inference exposes a `/metrics` endpoint via `prometheus_client` with counters for the same shape of thing (rows written, errors, cycle duration) so Grafana's ops dashboard stays uniform as services are added.
 6. **Terraform provisions; Compose runs.** `terraform apply` only touches VM/network/storage. `docker compose up -d --build` is how code changes reach the VM. Never fold service deployment logic into Terraform or infrastructure provisioning into Compose.
 7. **Nothing but SSH and Grafana is exposed on the public network.** Postgres/Timescale, Prometheus, MLflow, and the Prefect API are reachable only on the Docker-internal network. Don't add a `ports:` mapping that exposes an internal service publicly without updating the Terraform security list deliberately.

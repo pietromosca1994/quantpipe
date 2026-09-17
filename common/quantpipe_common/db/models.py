@@ -14,7 +14,7 @@ class Base(DeclarativeBase):
 class Bar(Base):
     """Raw 1-minute bars — the only table ingestion writes to.
 
-    Coarser timeframes (bars_15m/1h/1d) are TimescaleDB continuous aggregates
+    Coarser timeframes (bars_5m/15m/1h/1d) are TimescaleDB continuous aggregates
     derived from this table, not separate ORM models — see the initial migration.
     """
 

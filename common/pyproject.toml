@@ -16,6 +16,20 @@ dependencies = [
     "psycopg[binary]~=3.2",
 ]
 
+[project.optional-dependencies]
+# quantpipe_common.forecasting (BaseForecaster + model wrappers + backtest/metrics)
+# needs darts and its neural-model stack (pytorch-lightning etc.), which ingestion
+# has no reason to install — kept as an opt-in extra rather than a base dependency
+# so `pip install -e ./common` stays lightweight for services that don't forecast.
+# services/training and experiments/ install with `-e ./common[forecasting]`.
+# Both darts extras are needed: "torch" for the neural models (nbeats/nhits),
+# "notorch" for AutoARIMA (statsforecast) and LightGBMModel (lightgbm) — MODEL_REGISTRY
+# uses model families split across both.
+forecasting = [
+    "darts[torch,notorch]~=0.31",
+    "scipy~=1.14",
+]
+
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["quantpipe_common*"]

@@ -8,7 +8,7 @@ predictions — designed to run on Oracle Cloud's Always Free tier.
 
 - Periodically pulls 1-minute price bars for a **configurable list of tickers**
   (stocks and crypto) from **Alpaca**.
-- Stores bars in **TimescaleDB**, with automatic rollups to 15m/1h/1d via
+- Stores bars in **TimescaleDB**, with automatic rollups to 5m/15m/1h/1d via
   continuous aggregates — no separate ingestion path per timeframe.
 - (Planned) Periodically retrains forecasting models per ticker/timeframe,
   tracked in **MLflow**, and promotes to production only when a challenger
@@ -104,6 +104,7 @@ quantpipe/
 │   ├── ingestion/            # Alpaca client + Prefect flow: fetch -> validate -> upsert bars_1m
 │   └── prefect_flows/        # deployments.py: schedules, kept separate from flow logic
 ├── common/quantpipe_common/  # shared package: config/schemas, SQLAlchemy models, session factory, Alembic migrations
+├── experiments/                # research harness: backtests candidate forecasting models, not deployed
 ├── monitoring/                # prometheus.yml, Grafana datasource/dashboard provisioning
 ├── scripts/                   # dev-up.sh (stack bring-up + migrations), backfill.sh (historical backfill)
 └── config/tickers.yaml        # user-editable ticker/timeframe list
@@ -153,8 +154,18 @@ containers (tests, one-off scripts).
    `ingestion-flows` starts — it upserts on `(time, ticker)` the same way
    periodic ingestion does, so re-running never duplicates rows.
 
-5. **Open things up**: Grafana at `localhost:3000`, Prefect UI at `localhost:4200`,
-   MLflow at `localhost:5000`.
+5. **Open things up**:
+   - Grafana dashboards (provisioned automatically, see
+     `monitoring/grafana/provisioning/dashboards/json/`):
+     - [QuantPipe Bars](http://localhost:3000/d/quantpipe-bars) — price/volume
+       candlestick charts per ticker/timeframe.
+     - [QuantPipe Ops](http://localhost:3000/d/quantpipe-ops) — ingestion rows
+       written/errors, cycle duration, host CPU/memory, TimescaleDB connections.
+   - [MLflow](http://localhost:5000) — experiment tracking and the model
+     registry (empty until `services/training` exists and starts logging runs).
+   - [Prefect UI](http://localhost:4200/deployments) — the orchestrator:
+     `ingest-bars` deployment status, flow run history/logs, and manual
+     trigger-a-run.
 
 6. **Edit `config/tickers.yaml`** to change which tickers/timeframes are tracked —
    it's bind-mounted into `ingestion-flows`, so a container restart (not a

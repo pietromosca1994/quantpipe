@@ -12,10 +12,11 @@
       {
         "name": "timeframe",
         "type": "custom",
-        "query": "1m,15m,1h,1d",
+        "query": "1m,5m,15m,1h,1d",
         "current": { "text": "15m", "value": "15m" },
         "options": [
           { "text": "1m", "value": "1m" },
+          { "text": "5m", "value": "5m" },
           { "text": "15m", "value": "15m", "selected": true },
           { "text": "1h", "value": "1h" },
           { "text": "1d", "value": "1d" }

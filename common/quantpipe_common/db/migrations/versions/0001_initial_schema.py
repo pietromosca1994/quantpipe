@@ -21,6 +21,7 @@ depends_on: str | Sequence[str] | None = None
 
 # (view_name, time_bucket width) — derived from bars_1m, never ingested directly.
 _AGGREGATES: tuple[tuple[str, str], ...] = (
+    ("bars_5m", "5 minutes"),
     ("bars_15m", "15 minutes"),
     ("bars_1h", "1 hour"),
     ("bars_1d", "1 day"),

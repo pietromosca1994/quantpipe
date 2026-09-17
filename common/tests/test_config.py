@@ -37,7 +37,7 @@ def test_db_config_builds_sqlalchemy_dsn(monkeypatch):
 def test_ticker_config_defaults_to_all_timeframes():
     ticker = TickerConfig(symbol="AAPL", asset_class="us_equity")
 
-    assert ticker.timeframes == ["1m", "15m", "1h", "1d"]
+    assert ticker.timeframes == ["1m", "5m", "15m", "1h", "1d"]
 
 
 def test_ticker_config_rejects_unknown_asset_class():
@@ -61,6 +61,6 @@ tickers:
 
     assert len(config.tickers) == 2
     assert config.tickers[0].symbol == "AAPL"
-    assert config.tickers[0].timeframes == ["1m", "15m", "1h", "1d"]
+    assert config.tickers[0].timeframes == ["1m", "5m", "15m", "1h", "1d"]
     assert config.tickers[1].symbol == "BTC/USD"
     assert config.tickers[1].timeframes == ["1m", "1h"]

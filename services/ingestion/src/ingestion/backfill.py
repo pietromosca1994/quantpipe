@@ -1,10 +1,12 @@
-"""One-off historical backfill for bars_1m.
+"""Historical backfill for bars_1m.
 
-The periodic ingest-bars flow only looks back FETCH_LOOKBACK (5 minutes), so
-it never fills in history on its own. Run this once against a fresh database
-to provision it with history before periodic ingestion starts covering new
-bars going forward — see scripts/backfill.sh. Safe to re-run: it upserts on
-(time, ticker) the same way the periodic flow does.
+The periodic ingest-bars flow only looks back FETCH_LOOKBACK (10 minutes), so
+it never fills in history on its own. Run this manually against a fresh
+database to provision it with history before periodic ingestion starts
+covering new bars going forward — see scripts/backfill.sh. It's also called
+automatically on every ingestion-flows startup (services/prefect_flows/deployments.py)
+to close any gap left by downtime. Safe to re-run: it upserts on (time,
+ticker) the same way the periodic flow does.
 """
 
 from __future__ import annotations

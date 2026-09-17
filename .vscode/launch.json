@@ -1,0 +1,31 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug run_experiment.py",
+      "type": "debugpy",
+      "request": "launch",
+      "python": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "program": "${workspaceFolder}/experiments/forecasting/run_experiment.py",
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      // experiments/ isn't installed as a package — needs to be on the path so
+      // "from forecasting.viz import ..." resolves; quantpipe_common is already
+      // installed editable into .venv so it doesn't need the same treatment.
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/experiments",
+        // mlflow prints an emoji ("🏃 View run...") straight to stdout; Windows'
+        // default cp1252 console encoding can't represent it and crashes the run.
+        "PYTHONUTF8": "1",
+        // .env's POSTGRES_HOST/MLFLOW_TRACKING_URI point at Docker-internal
+        // hostnames; from the host, the stack is reached via the ports
+        // docker-compose.override.yml publishes to localhost instead.
+        "POSTGRES_HOST": "localhost",
+        "POSTGRES_PORT": "5432",
+        "MLFLOW_TRACKING_URI": "http://localhost:5000"
+      },
+      "envFile": "${workspaceFolder}/.env",
+      "args": []
+    }
+  ]
+}
